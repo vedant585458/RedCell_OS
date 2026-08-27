@@ -98,8 +98,21 @@ class DepartmentStaffingService:
             )
             unassigned_ready = sum(1 for t in ready_task_items if not t.assigned_agent_id)
 
-            # Capacity deficit is unassigned ready tasks exceeding available idle workers
-            capacity_deficit = max(0, unassigned_ready - idle_agents)
+            # Role-specific capacity deficit: unassigned ready tasks lacking matching idle specialist workers
+            idle_by_role: dict[str, int] = {}
+            for a in agents:
+                if a.status == AgentStatus.IDLE:
+                    idle_by_role[a.role_id] = idle_by_role.get(a.role_id, 0) + 1
+
+            unassigned_deficit = 0
+            for t in ready_task_items:
+                if not t.assigned_agent_id:
+                    if idle_by_role.get(t.assigned_role, 0) > 0:
+                        idle_by_role[t.assigned_role] -= 1
+                    else:
+                        unassigned_deficit += 1
+
+            capacity_deficit = unassigned_deficit
             can_hire = total_agents < self.max_agents_per_department
 
             utilization = (busy_agents / total_agents) if total_agents > 0 else 1.0
@@ -135,25 +148,43 @@ class DepartmentStaffingService:
         engagement_id: str | None = None,
     ) -> list[StaffingRecommendation]:
         """Determine specific specialist roles requiring additional agent hires."""
-        capacity = await self.evaluate_department_capacity(department_id, engagement_id)
-        if capacity.capacity_deficit == 0 or not capacity.can_hire_more:
-            return []
-
         async with UnitOfWork(self.session_factory) as uow:
+            dept = await uow.departments.get_by_id(department_id)
+            if not dept:
+                raise ValueError(f"Department '{department_id}' not found")
+
+            agents = await uow.agents.list_by_department(department_id)
+            total_agents = len(agents)
+            can_hire = total_agents < self.max_agents_per_department
+            if not can_hire:
+                return []
+
             unassigned_tasks = await uow.tasks.list_by_department(
                 department_id=department_id,
                 engagement_id=engagement_id,
                 status=TaskStatus.READY,
             )
 
-        # Count needed roles
-        role_needs: dict[str, int] = {}
-        for t in unassigned_tasks:
-            if not t.assigned_agent_id:
-                role_needs[t.assigned_role] = role_needs.get(t.assigned_role, 0) + 1
+            # Map available idle agents by role
+            idle_by_role: dict[str, int] = {}
+            for a in agents:
+                if a.status == AgentStatus.IDLE:
+                    idle_by_role[a.role_id] = idle_by_role.get(a.role_id, 0) + 1
+
+            # Count needed roles
+            role_needs: dict[str, int] = {}
+            for t in unassigned_tasks:
+                if not t.assigned_agent_id:
+                    if idle_by_role.get(t.assigned_role, 0) > 0:
+                        idle_by_role[t.assigned_role] -= 1
+                    else:
+                        role_needs[t.assigned_role] = role_needs.get(t.assigned_role, 0) + 1
+
+        if not role_needs:
+            return []
 
         recommendations: list[StaffingRecommendation] = []
-        available_headcount = self.max_agents_per_department - capacity.total_agents
+        available_headcount = self.max_agents_per_department - total_agents
 
         for role_id, needed in role_needs.items():
             if available_headcount <= 0:
