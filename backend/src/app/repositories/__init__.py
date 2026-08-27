@@ -1,5 +1,6 @@
 """Repository pattern and Unit of Work data access layer for RedCell_OS."""
 
+from .agent_memory_repo import AgentMemoryRepository
 from .agent_repo import AgentRepository
 from .approval_repo import ApprovalRepository
 from .audit_repo import AuditRepository
@@ -27,4 +28,5 @@ __all__ = [
     "AuditRepository",
     "MessageRepository",
     "ExecutionRepository",
+    "AgentMemoryRepository",
 ]

@@ -8,6 +8,13 @@ from .agent import (
     AIEmployeeModel,
     AIEmployeeRepository,
 )
+from .agent_memory import (
+    AgentMemoryCreateRequest,
+    AgentMemoryModel,
+    AgentMemoryResponse,
+    MemoryStatus,
+    MemoryType,
+)
 from .approval import (
     ApprovalDecisionRequest,
     ApprovalModel,
@@ -115,6 +122,11 @@ __all__ = [
     "AgentResponse",
     "AIEmployeeModel",
     "AIEmployeeRepository",
+    "AgentMemoryCreateRequest",
+    "AgentMemoryResponse",
+    "AgentMemoryModel",
+    "MemoryType",
+    "MemoryStatus",
     "TaskStatus",
     "TaskPriority",
     "TaskCreateRequest",

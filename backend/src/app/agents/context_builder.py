@@ -8,6 +8,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from app.core.logging import get_logger
+from app.domain.agent_memory import AgentMemoryResponse, MemoryStatus
 from app.domain.communication import MessageResponse
 from app.domain.engagement import EngagementResponse
 from app.domain.finding import FindingResponse, FindingSeverity
@@ -51,6 +52,7 @@ class AgentWorkingContext(BaseModel):
     scope_and_roe: str = Field(description="Pinned Scope & Rules of Engagement constraints")
     task_details: str = Field(description="Pinned target parameters and task objective")
     parent_chain_summaries: list[str] = Field(default_factory=list)
+    persistent_memories: list[dict[str, Any]] = Field(default_factory=list)
     relevant_findings: list[dict[str, Any]] = Field(default_factory=list)
     recent_messages: list[dict[str, Any]] = Field(default_factory=list)
     estimated_tokens: int
@@ -68,12 +70,22 @@ class AgentWorkingContext(BaseModel):
             f"{self.scope_and_roe}"
         )
 
-        # User Message: Task context, Ancestry, Findings, and Messages
+        # User Message: Task context, Ancestry, Persistent Role Memory, Findings, and Messages
         user_sections: list[str] = [f"=== CURRENT TASK OBJECTIVE ===\n{self.task_details}"]
 
         if self.parent_chain_summaries:
             ancestors_str = "\n".join(f"- {anc}" for anc in self.parent_chain_summaries)
             user_sections.append(f"=== PARENT MISSION DAG CONTEXT ===\n{ancestors_str}")
+
+        if self.persistent_memories:
+            memories_str = "\n".join(
+                f"- [{m.get('memory_type', 'LEARNED')}] {m.get('key')}: {m.get('content')} "
+                f"(Confidence: {m.get('confidence_score', 0.8):.2f})"
+                for m in self.persistent_memories
+            )
+            user_sections.append(
+                f"=== PERSISTENT ROLE MEMORY (LEARNED OBSERVATIONS) ===\n{memories_str}"
+            )
 
         if self.relevant_findings:
             findings_str = "\n".join(
@@ -183,22 +195,37 @@ class ContextBuilder:
             eng_messages = await uow.messages.list_by_engagement(task_resp.engagement_id)
             combined_messages = self._deduplicate_messages(task_messages + eng_messages)
 
-        # 6. Rank Dynamic Context Candidates (Technical Decision: Relevance + Recency Scoring)
-        target_endpoint = str(
-            task_resp.input_context.get(
-                "target", task_resp.input_context.get("target_endpoint", "")
+            # 6. Gather Persistent Long-Term Role Memories
+            target_endpoint = str(
+                task_resp.input_context.get(
+                    "target", task_resp.input_context.get("target_endpoint", "")
+                )
             )
-        )
+            persistent_memories = await uow.memories.query_memories(
+                role_id=agent_resp.role_id,
+                target=target_endpoint or engagement_resp.organization,
+                engagement_id=task_resp.engagement_id,
+                status=MemoryStatus.APPROVED,
+            )
+
+        # 7. Rank Dynamic Context Candidates (Technical Decision: Relevance + Recency Scoring)
         ranked_items = self._rank_candidates(
             parent_chain=parent_chain_items,
+            memories=persistent_memories,
             findings=findings[:max_findings],
             messages=combined_messages[:max_messages],
             task_id=task_id,
             target_endpoint=target_endpoint,
         )
 
-        # 7. Greedy Packing within Remaining Token Budget
-        packed_parents, packed_findings, packed_messages, truncated_count = self._pack_items(
+        # 8. Greedy Packing within Remaining Token Budget
+        (
+            packed_parents,
+            packed_memories,
+            packed_findings,
+            packed_messages,
+            truncated_count,
+        ) = self._pack_items(
             ranked_items=ranked_items,
             available_budget=remaining_budget,
         )
@@ -206,8 +233,9 @@ class ContextBuilder:
         total_estimated_tokens = (
             pinned_tokens
             + sum(estimate_tokens(p) for p in packed_parents)
+            + sum(estimate_tokens(json.dumps(m)) for m in packed_memories)
             + sum(estimate_tokens(json.dumps(f)) for f in packed_findings)
-            + sum(estimate_tokens(json.dumps(m)) for m in packed_messages)
+            + sum(estimate_tokens(json.dumps(msg)) for msg in packed_messages)
         )
 
         return AgentWorkingContext(
@@ -218,6 +246,7 @@ class ContextBuilder:
             scope_and_roe=scope_and_roe,
             task_details=task_details,
             parent_chain_summaries=packed_parents,
+            persistent_memories=packed_memories,
             relevant_findings=packed_findings,
             recent_messages=packed_messages,
             estimated_tokens=total_estimated_tokens,
@@ -335,6 +364,7 @@ class ContextBuilder:
     def _rank_candidates(
         self,
         parent_chain: list[TaskResponse],
+        memories: list[AgentMemoryResponse],
         findings: list[FindingResponse],
         messages: list[MessageResponse],
         task_id: str,
@@ -362,7 +392,36 @@ class ContextBuilder:
                 )
             )
 
-        # 2. Findings
+        # 2. Persistent Role Memories (Learned patterns across tasks/engagements)
+        for idx, mem in enumerate(memories):
+            mem_dict = {
+                "memory_id": mem.id,
+                "role_id": mem.role_id,
+                "memory_type": mem.memory_type.value,
+                "key": mem.key,
+                "content": mem.content,
+                "confidence_score": mem.confidence_score,
+            }
+            text = f"[{mem.memory_type.value}] {mem.key}: {mem.content}"
+            rel = mem.confidence_score
+            if target_endpoint and target_endpoint.lower() in mem.target_domain_or_org.lower():
+                rel = min(1.0, rel + 0.2)
+            rec = max(0.5, 1.0 - (idx * 0.05))
+            weight = (0.6 * rel) + (0.4 * rec)
+            candidates.append(
+                RankedContextItem(
+                    item_id=f"mem-{mem.id}",
+                    category="persistent_memory",
+                    text_content=text,
+                    estimated_tokens=estimate_tokens(text),
+                    relevance_score=rel,
+                    recency_score=rec,
+                    combined_weight=weight,
+                    metadata=mem_dict,
+                )
+            )
+
+        # 3. Findings
         for idx, f in enumerate(findings):
             f_dict = {
                 "finding_id": f.finding_id,
@@ -389,30 +448,30 @@ class ContextBuilder:
                 )
             )
 
-        # 3. Messages
-        for idx, m in enumerate(messages):
-            m_dict = {
-                "message_id": m.id,
-                "sender": m.sender_agent_id,
-                "recipient": m.recipient_agent_id,
-                "type": m.message_type.value,
-                "content": m.content,
-                "created_at": m.created_at,
+        # 4. Messages
+        for idx, msg in enumerate(messages):
+            msg_dict = {
+                "message_id": msg.id,
+                "sender": msg.sender_agent_id,
+                "recipient": msg.recipient_agent_id,
+                "type": msg.message_type.value,
+                "content": msg.content,
+                "created_at": msg.created_at,
             }
-            text = json.dumps(m_dict)
-            rel = self._score_message(m, task_id)
+            text = json.dumps(msg_dict)
+            rel = self._score_message(msg, task_id)
             rec = max(0.1, 1.0 - (idx * 0.08))
             weight = (0.6 * rel) + (0.4 * rec)
             candidates.append(
                 RankedContextItem(
-                    item_id=f"msg-{m.id}",
+                    item_id=f"msg-{msg.id}",
                     category="message",
                     text_content=text,
                     estimated_tokens=estimate_tokens(text),
                     relevance_score=rel,
                     recency_score=rec,
                     combined_weight=weight,
-                    metadata=m_dict,
+                    metadata=msg_dict,
                 )
             )
 
@@ -424,9 +483,16 @@ class ContextBuilder:
         self,
         ranked_items: list[RankedContextItem],
         available_budget: int,
-    ) -> tuple[list[str], list[dict[str, Any]], list[dict[str, Any]], int]:
+    ) -> tuple[
+        list[str],
+        list[dict[str, Any]],
+        list[dict[str, Any]],
+        list[dict[str, Any]],
+        int,
+    ]:
         """Greedily pack ranked dynamic items into available budget."""
         packed_parents: list[str] = []
+        packed_memories: list[dict[str, Any]] = []
         packed_findings: list[dict[str, Any]] = []
         packed_messages: list[dict[str, Any]] = []
 
@@ -438,6 +504,8 @@ class ContextBuilder:
                 spent_tokens += item.estimated_tokens
                 if item.category == "parent_task":
                     packed_parents.append(item.metadata.get("summary", item.text_content))
+                elif item.category == "persistent_memory":
+                    packed_memories.append(item.metadata)
                 elif item.category == "finding":
                     packed_findings.append(item.metadata)
                 elif item.category == "message":
@@ -445,4 +513,10 @@ class ContextBuilder:
             else:
                 truncated_count += 1
 
-        return packed_parents, packed_findings, packed_messages, truncated_count
+        return (
+            packed_parents,
+            packed_memories,
+            packed_findings,
+            packed_messages,
+            truncated_count,
+        )

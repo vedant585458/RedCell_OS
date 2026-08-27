@@ -7,6 +7,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.repositories.agent_memory_repo import AgentMemoryRepository
 from app.repositories.agent_repo import AgentRepository
 from app.repositories.approval_repo import ApprovalRepository
 from app.repositories.audit_repo import AuditRepository
@@ -36,6 +37,7 @@ class UnitOfWork:
         self.audit: AuditRepository
         self.messages: MessageRepository
         self.executions: ExecutionRepository
+        self.memories: AgentMemoryRepository
 
     async def __aenter__(self) -> "UnitOfWork":
         self.session = self.session_factory()
@@ -49,6 +51,7 @@ class UnitOfWork:
         self.audit = AuditRepository(self.session)
         self.messages = MessageRepository(self.session)
         self.executions = ExecutionRepository(self.session)
+        self.memories = AgentMemoryRepository(self.session)
         return self
 
     async def __aexit__(
