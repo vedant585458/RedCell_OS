@@ -45,7 +45,12 @@ class MockAgentBrain(AgentBrain):
                 return BrainResponse(
                     content=mock_data.model_dump_json(),
                     structured_data=mock_data,
-                    usage=BrainUsage(prompt_tokens=20, completion_tokens=40, total_tokens=60, estimated_cost_usd=0.0),
+                    usage=BrainUsage(
+                        prompt_tokens=20,
+                        completion_tokens=40,
+                        total_tokens=60,
+                        estimated_cost_usd=0.0,
+                    ),
                     model="mock-deterministic-v1",
                     finish_reason="stop",
                 )
@@ -54,7 +59,9 @@ class MockAgentBrain(AgentBrain):
         return BrainResponse(
             content=content,
             structured_data=None,
-            usage=BrainUsage(prompt_tokens=10, completion_tokens=15, total_tokens=25, estimated_cost_usd=0.0),
+            usage=BrainUsage(
+                prompt_tokens=10, completion_tokens=15, total_tokens=25, estimated_cost_usd=0.0
+            ),
             model="mock-deterministic-v1",
             finish_reason="stop",
         )

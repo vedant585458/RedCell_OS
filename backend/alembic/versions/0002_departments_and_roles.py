@@ -22,7 +22,12 @@ def upgrade() -> None:
         sa.Column("id", sa.String(length=64), primary_key=True),
         sa.Column("name", sa.String(length=128), nullable=False),
         sa.Column("description", sa.Text(), nullable=False, server_default=""),
-        sa.Column("parent_org", sa.String(length=128), nullable=False, server_default="RedCell_OS Operations"),
+        sa.Column(
+            "parent_org",
+            sa.String(length=128),
+            nullable=False,
+            server_default="RedCell_OS Operations",
+        ),
         sa.Column("color_theme", sa.String(length=32), nullable=False, server_default="blue"),
         sa.Column("created_at", sa.String(length=64), nullable=False),
     )
@@ -33,7 +38,9 @@ def upgrade() -> None:
         "roles",
         sa.Column("id", sa.String(length=64), primary_key=True),
         sa.Column("name", sa.String(length=128), nullable=False),
-        sa.Column("department_id", sa.String(length=64), sa.ForeignKey("departments.id"), nullable=False),
+        sa.Column(
+            "department_id", sa.String(length=64), sa.ForeignKey("departments.id"), nullable=False
+        ),
         sa.Column("description", sa.Text(), nullable=False, server_default=""),
         sa.Column("version", sa.String(length=32), nullable=False, server_default="1.0.0"),
         sa.Column("system_prompt_template", sa.String(length=256), nullable=False),

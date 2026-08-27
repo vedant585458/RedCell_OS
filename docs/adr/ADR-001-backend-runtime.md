@@ -113,6 +113,7 @@ import asyncio
 import os
 import signal
 
+
 class AgentProcessSupervisor:
     def __init__(self, agent_id: str, workspace_path: str):
         self.agent_id = agent_id
@@ -120,7 +121,9 @@ class AgentProcessSupervisor:
         self.process: asyncio.subprocess.Process | None = None
         self.pgid: int | None = None
 
-    async def launch_tool(self, cmd: list[str], env: dict[str, str], timeout_sec: float) -> tuple[int, str, str]:
+    async def launch_tool(
+        self, cmd: list[str], env: dict[str, str], timeout_sec: float
+    ) -> tuple[int, str, str]:
         # Launch in dedicated process session to establish new PGID
         self.process = await asyncio.create_subprocess_exec(
             *cmd,
@@ -128,19 +131,24 @@ class AgentProcessSupervisor:
             env=env,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            start_new_session=True  # Creates new process group
+            start_new_session=True,  # Creates new process group
         )
         self.pgid = os.getpgid(self.process.pid)
-        
+
         try:
             stdout, stderr = await asyncio.wait_for(
-                self.process.communicate(),
-                timeout=timeout_sec
+                self.process.communicate(), timeout=timeout_sec
             )
-            return self.process.returncode or 0, stdout.decode(errors="replace"), stderr.decode(errors="replace")
+            return (
+                self.process.returncode or 0,
+                stdout.decode(errors="replace"),
+                stderr.decode(errors="replace"),
+            )
         except asyncio.TimeoutError:
             await self.kill()
-            raise TimeoutError(f"Agent {self.agent_id} process exceeded timeout of {timeout_sec}s")
+            raise TimeoutError(
+                f"Agent {self.agent_id} process exceeded timeout of {timeout_sec}s"
+            )
 
     async def kill(self) -> None:
         """Instantaneous sub-200ms kill switch using process group SIGKILL."""

@@ -109,17 +109,24 @@ import os
 import resource
 import signal
 
+
 class ResourceLimits:
-    def __init__(self, max_memory_mb: int = 1024, max_cpu_sec: int = 60, max_files: int = 256):
+    def __init__(
+        self, max_memory_mb: int = 1024, max_cpu_sec: int = 60, max_files: int = 256
+    ):
         self.max_memory_bytes = max_memory_mb * 1024 * 1024
         self.max_cpu_sec = max_cpu_sec
         self.max_files = max_files
 
+
 def _apply_rlimits(limits: ResourceLimits):
     """Executed in child process before exec."""
-    resource.setrlimit(resource.RLIMIT_AS, (limits.max_memory_bytes, limits.max_memory_bytes))
+    resource.setrlimit(
+        resource.RLIMIT_AS, (limits.max_memory_bytes, limits.max_memory_bytes)
+    )
     resource.setrlimit(resource.RLIMIT_CPU, (limits.max_cpu_sec, limits.max_cpu_sec))
     resource.setrlimit(resource.RLIMIT_NOFILE, (limits.max_files, limits.max_files))
+
 
 class SubprocessSandboxProvider:
     async def run(
@@ -127,14 +134,14 @@ class SubprocessSandboxProvider:
         cmd: list[str],
         workspace_path: str,
         limits: ResourceLimits,
-        timeout_sec: float = 120.0
+        timeout_sec: float = 120.0,
     ) -> tuple[int, str, str]:
         # Sanitized environment
         clean_env = {
             "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
             "HOME": workspace_path,
             "TMPDIR": os.path.join(workspace_path, "tmp"),
-            "LANG": "C.UTF-8"
+            "LANG": "C.UTF-8",
         }
         os.makedirs(clean_env["TMPDIR"], exist_ok=True)
 
@@ -145,19 +152,27 @@ class SubprocessSandboxProvider:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             start_new_session=True,
-            preexec_fn=lambda: _apply_rlimits(limits)
+            preexec_fn=lambda: _apply_rlimits(limits),
         )
         pgid = os.getpgid(proc.pid)
 
         try:
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout_sec)
-            return proc.returncode or 0, stdout.decode(errors="replace"), stderr.decode(errors="replace")
+            stdout, stderr = await asyncio.wait_for(
+                proc.communicate(), timeout=timeout_sec
+            )
+            return (
+                proc.returncode or 0,
+                stdout.decode(errors="replace"),
+                stderr.decode(errors="replace"),
+            )
         except asyncio.TimeoutError:
             try:
                 os.killpg(pgid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
-            raise TimeoutError(f"Command '{' '.join(cmd)}' timed out after {timeout_sec}s")
+            raise TimeoutError(
+                f"Command '{' '.join(cmd)}' timed out after {timeout_sec}s"
+            )
 ```
 
 ---

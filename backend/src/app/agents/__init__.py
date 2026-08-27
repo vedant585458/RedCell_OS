@@ -4,6 +4,18 @@ from .events import (
     AgentLifecycleService,
     AgentStateChangedEventPayload,
 )
+from .recovery import (
+    DEFAULT_POLICY_RULES,
+    AgentRecoveryService,
+    FailureClassification,
+    FailureType,
+    RecoveryAbandonedError,
+    RecoveryAction,
+    RecoveryDecision,
+    RecoveryEscalatedError,
+    RecoveryPolicy,
+    RecoveryPolicyRule,
+)
 from .state_machine import (
     ALLOWED_TRANSITIONS,
     AgentLifecycleState,
@@ -20,4 +32,14 @@ __all__ = [
     "AgentStateMachine",
     "AgentStateChangedEventPayload",
     "AgentLifecycleService",
+    "FailureClassification",
+    "FailureType",
+    "RecoveryAction",
+    "RecoveryPolicyRule",
+    "RecoveryDecision",
+    "RecoveryEscalatedError",
+    "RecoveryAbandonedError",
+    "DEFAULT_POLICY_RULES",
+    "RecoveryPolicy",
+    "AgentRecoveryService",
 ]

@@ -28,5 +28,9 @@ def export_openapi(output_path: str) -> None:
 
 
 if __name__ == "__main__":
-    output_file = sys.argv[1] if len(sys.argv) > 1 else os.path.join(root_dir, "data", "openapi.json")
+    output_file = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else os.path.join(root_dir, "data", "openapi.json")
+    )
     export_openapi(output_file)

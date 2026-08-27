@@ -20,11 +20,25 @@ def upgrade() -> None:
     op.create_table(
         "agent_messages",
         sa.Column("id", sa.String(length=64), primary_key=True),
-        sa.Column("engagement_id", sa.String(length=64), sa.ForeignKey("engagements.id"), nullable=False),
-        sa.Column("sender_agent_id", sa.String(length=64), sa.ForeignKey("ai_employees.id"), nullable=False),
-        sa.Column("recipient_agent_id", sa.String(length=64), sa.ForeignKey("ai_employees.id"), nullable=True),
+        sa.Column(
+            "engagement_id", sa.String(length=64), sa.ForeignKey("engagements.id"), nullable=False
+        ),
+        sa.Column(
+            "sender_agent_id",
+            sa.String(length=64),
+            sa.ForeignKey("ai_employees.id"),
+            nullable=False,
+        ),
+        sa.Column(
+            "recipient_agent_id",
+            sa.String(length=64),
+            sa.ForeignKey("ai_employees.id"),
+            nullable=True,
+        ),
         sa.Column("task_id", sa.String(length=64), sa.ForeignKey("tasks.id"), nullable=True),
-        sa.Column("message_type", sa.String(length=32), nullable=False, server_default="STATUS_UPDATE"),
+        sa.Column(
+            "message_type", sa.String(length=32), nullable=False, server_default="STATUS_UPDATE"
+        ),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("metadata_json", sa.Text(), nullable=False, server_default="{}"),
         sa.Column("created_at", sa.String(length=64), nullable=False),
@@ -39,9 +53,13 @@ def upgrade() -> None:
     op.create_table(
         "process_executions",
         sa.Column("id", sa.String(length=64), primary_key=True),
-        sa.Column("engagement_id", sa.String(length=64), sa.ForeignKey("engagements.id"), nullable=False),
+        sa.Column(
+            "engagement_id", sa.String(length=64), sa.ForeignKey("engagements.id"), nullable=False
+        ),
         sa.Column("task_id", sa.String(length=64), sa.ForeignKey("tasks.id"), nullable=False),
-        sa.Column("agent_id", sa.String(length=64), sa.ForeignKey("ai_employees.id"), nullable=False),
+        sa.Column(
+            "agent_id", sa.String(length=64), sa.ForeignKey("ai_employees.id"), nullable=False
+        ),
         sa.Column("workspace_path", sa.String(length=256), nullable=False),
         sa.Column("pid", sa.Integer(), nullable=False),
         sa.Column("exit_code", sa.Integer(), nullable=False),
@@ -65,9 +83,13 @@ def upgrade() -> None:
     op.create_table(
         "approvals",
         sa.Column("id", sa.String(length=64), primary_key=True),
-        sa.Column("engagement_id", sa.String(length=64), sa.ForeignKey("engagements.id"), nullable=False),
+        sa.Column(
+            "engagement_id", sa.String(length=64), sa.ForeignKey("engagements.id"), nullable=False
+        ),
         sa.Column("task_id", sa.String(length=64), sa.ForeignKey("tasks.id"), nullable=False),
-        sa.Column("agent_id", sa.String(length=64), sa.ForeignKey("ai_employees.id"), nullable=False),
+        sa.Column(
+            "agent_id", sa.String(length=64), sa.ForeignKey("ai_employees.id"), nullable=False
+        ),
         sa.Column("category", sa.String(length=64), nullable=False),
         sa.Column("target_uri", sa.String(length=256), nullable=False),
         sa.Column("risk_description", sa.Text(), nullable=False),
@@ -88,7 +110,9 @@ def upgrade() -> None:
         "audit_events",
         sa.Column("id", sa.String(length=64), primary_key=True),
         sa.Column("seq", sa.Integer(), nullable=False, unique=True),
-        sa.Column("engagement_id", sa.String(length=64), sa.ForeignKey("engagements.id"), nullable=False),
+        sa.Column(
+            "engagement_id", sa.String(length=64), sa.ForeignKey("engagements.id"), nullable=False
+        ),
         sa.Column("correlation_id", sa.String(length=64), nullable=False),
         sa.Column("event_type", sa.String(length=64), nullable=False),
         sa.Column("actor_type", sa.String(length=32), nullable=False, server_default="AGENT"),

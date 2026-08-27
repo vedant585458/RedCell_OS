@@ -20,14 +20,23 @@ def upgrade() -> None:
     op.create_table(
         "tasks",
         sa.Column("id", sa.String(length=64), primary_key=True),
-        sa.Column("engagement_id", sa.String(length=64), sa.ForeignKey("engagements.id"), nullable=False),
-        sa.Column("department_id", sa.String(length=64), sa.ForeignKey("departments.id"), nullable=False),
+        sa.Column(
+            "engagement_id", sa.String(length=64), sa.ForeignKey("engagements.id"), nullable=False
+        ),
+        sa.Column(
+            "department_id", sa.String(length=64), sa.ForeignKey("departments.id"), nullable=False
+        ),
         sa.Column("title", sa.String(length=128), nullable=False),
         sa.Column("description", sa.Text(), nullable=False, server_default=""),
         sa.Column("status", sa.String(length=32), nullable=False, server_default="PENDING"),
         sa.Column("priority", sa.Integer(), nullable=False, server_default="2"),
         sa.Column("assigned_role", sa.String(length=64), nullable=False),
-        sa.Column("assigned_agent_id", sa.String(length=64), sa.ForeignKey("ai_employees.id"), nullable=True),
+        sa.Column(
+            "assigned_agent_id",
+            sa.String(length=64),
+            sa.ForeignKey("ai_employees.id"),
+            nullable=True,
+        ),
         sa.Column("parent_task_id", sa.String(length=64), sa.ForeignKey("tasks.id"), nullable=True),
         sa.Column("requires_approval_gate", sa.String(length=64), nullable=True),
         sa.Column("input_context_json", sa.Text(), nullable=False, server_default="{}"),
@@ -45,8 +54,18 @@ def upgrade() -> None:
     # 2. Create task_dependencies edge table
     op.create_table(
         "task_dependencies",
-        sa.Column("task_id", sa.String(length=64), sa.ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True),
-        sa.Column("depends_on_task_id", sa.String(length=64), sa.ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True),
+        sa.Column(
+            "task_id",
+            sa.String(length=64),
+            sa.ForeignKey("tasks.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
+        sa.Column(
+            "depends_on_task_id",
+            sa.String(length=64),
+            sa.ForeignKey("tasks.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
         sa.CheckConstraint("task_id != depends_on_task_id", name="check_prevent_self_dependency"),
     )
     op.create_index("idx_task_deps_lookup", "task_dependencies", ["task_id", "depends_on_task_id"])

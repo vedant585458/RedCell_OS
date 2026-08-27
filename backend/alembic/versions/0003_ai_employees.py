@@ -20,7 +20,9 @@ def upgrade() -> None:
         "ai_employees",
         sa.Column("id", sa.String(length=64), primary_key=True),
         sa.Column("role_id", sa.String(length=64), sa.ForeignKey("roles.id"), nullable=False),
-        sa.Column("department_id", sa.String(length=64), sa.ForeignKey("departments.id"), nullable=False),
+        sa.Column(
+            "department_id", sa.String(length=64), sa.ForeignKey("departments.id"), nullable=False
+        ),
         sa.Column("display_name", sa.String(length=128), nullable=False),
         sa.Column("status", sa.String(length=32), nullable=False, server_default="IDLE"),
         sa.Column("current_task_id", sa.String(length=64), nullable=True),

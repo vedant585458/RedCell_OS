@@ -24,8 +24,8 @@ class Orchestrator:
 
     def __init__(self) -> None:
         self.state: OrchestratorState = OrchestratorState.STOPPED
-        self.command_queue: asyncio.Queue[OrchestratorCommand] = asyncio.Queue()
-        self.event_queue: asyncio.Queue[OrchestratorEvent] = asyncio.Queue()
+        self._command_queue: asyncio.Queue[OrchestratorCommand] | None = None
+        self._event_queue: asyncio.Queue[OrchestratorEvent] | None = None
 
         self._command_handlers: dict[str, CommandHandler] = {}
         self._event_subscribers: list[EventSubscriber] = []
@@ -34,7 +34,26 @@ class Orchestrator:
         self._command_worker_task: asyncio.Task[None] | None = None
         self._event_worker_task: asyncio.Task[None] | None = None
         self._seq_counter: int = 0
-        self._lock = asyncio.Lock()
+
+    @property
+    def command_queue(self) -> asyncio.Queue[OrchestratorCommand]:
+        if self._command_queue is None:
+            self._command_queue = asyncio.Queue()
+        return self._command_queue
+
+    @command_queue.setter
+    def command_queue(self, queue: asyncio.Queue[OrchestratorCommand]) -> None:
+        self._command_queue = queue
+
+    @property
+    def event_queue(self) -> asyncio.Queue[OrchestratorEvent]:
+        if self._event_queue is None:
+            self._event_queue = asyncio.Queue()
+        return self._event_queue
+
+    @event_queue.setter
+    def event_queue(self, queue: asyncio.Queue[OrchestratorEvent]) -> None:
+        self._event_queue = queue
 
     @property
     def is_running(self) -> bool:
@@ -48,6 +67,10 @@ class Orchestrator:
 
         self.state = OrchestratorState.STARTING
         logger.info("Starting Orchestrator core loop...")
+
+        # Re-initialize queues for current running loop
+        self._command_queue = asyncio.Queue()
+        self._event_queue = asyncio.Queue()
 
         # Spawn background queue processors
         self._command_worker_task = asyncio.create_task(
@@ -109,6 +132,15 @@ class Orchestrator:
         """Register an async callback for emitted outbound events."""
         self._event_subscribers.append(subscriber)
 
+    def unregister_event_subscriber(self, subscriber: EventSubscriber) -> None:
+        """Unregister an async callback for emitted outbound events."""
+        if subscriber in self._event_subscribers:
+            self._event_subscribers.remove(subscriber)
+
+    def clear_subscribers(self) -> None:
+        """Clear all registered event subscribers."""
+        self._event_subscribers.clear()
+
     async def submit_command(self, cmd: OrchestratorCommand) -> None:
         """Submit a command to the internal queue for processing."""
         if not self.is_running and self.state != OrchestratorState.STARTING:
@@ -126,9 +158,8 @@ class Orchestrator:
         task_id: str | None = None,
     ) -> OrchestratorEvent:
         """Construct, sequence, and queue an outbound event."""
-        async with self._lock:
-            self._seq_counter += 1
-            seq = self._seq_counter
+        self._seq_counter += 1
+        seq = self._seq_counter
 
         event = OrchestratorEvent(
             seq=seq,

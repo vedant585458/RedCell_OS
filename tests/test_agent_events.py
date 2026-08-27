@@ -140,6 +140,7 @@ async def test_agent_state_changed_event_emission_sequence():
 
         await asyncio.sleep(0.05)
         await global_orchestrator.stop()
+        global_orchestrator.unregister_event_subscriber(capture_event)
 
         # Assert: 7 transitions executed -> exactly 7 agent_state_changed events captured
         assert len(emitted_events) == 7

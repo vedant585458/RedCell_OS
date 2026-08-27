@@ -97,10 +97,12 @@ from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
 
+
 class ChatMessage(BaseModel):
     role: str  # "system" | "user" | "assistant" | "tool"
     content: str
     name: str | None = None
+
 
 class BrainUsage(BaseModel):
     prompt_tokens: int
@@ -108,12 +110,14 @@ class BrainUsage(BaseModel):
     total_tokens: int
     estimated_cost_usd: float = 0.0
 
+
 class BrainResponse(BaseModel):
     content: str
     structured_data: BaseModel | None = None
     usage: BrainUsage
     model: str
     finish_reason: str
+
 
 class AgentBrain(ABC):
     """Abstract provider-agnostic interface for agent reasoning."""
@@ -162,6 +166,7 @@ When structured output is requested, the system guarantees that the return value
        description: str
        depends_on: list[str] = []
        requires_approval_gate: str | None = None
+
 
    class CisoPlanOutput(BaseModel):
        engagement_id: str
@@ -227,6 +232,7 @@ For unit testing, CI/CD, and the **Phase P70 E2E Acceptance Test**, a `MockAgent
 ```python
 class MockAgentBrain(AgentBrain):
     """Deterministic brain for offline testing and CI suites."""
+
     def __init__(self, responses: dict[str, BaseModel | str] | None = None):
         self.responses = responses or {}
         self.call_history: list[dict] = []
@@ -234,22 +240,24 @@ class MockAgentBrain(AgentBrain):
     async def generate(self, prompt: str, **kwargs) -> BrainResponse:
         self.call_history.append({"prompt": prompt, "kwargs": kwargs})
         schema = kwargs.get("response_schema")
-        
+
         # Match scripted response or synthesize mock instance
         if schema and schema in self.responses:
             data = self.responses[schema]
             return BrainResponse(
                 content=data.model_dump_json(),
                 structured_data=data,
-                usage=BrainUsage(prompt_tokens=10, completion_tokens=20, total_tokens=30),
+                usage=BrainUsage(
+                    prompt_tokens=10, completion_tokens=20, total_tokens=30
+                ),
                 model="mock-brain-v1",
-                finish_reason="stop"
+                finish_reason="stop",
             )
         return BrainResponse(
             content="Mock response output",
             usage=BrainUsage(prompt_tokens=5, completion_tokens=5, total_tokens=10),
             model="mock-brain-v1",
-            finish_reason="stop"
+            finish_reason="stop",
         )
 ```
 

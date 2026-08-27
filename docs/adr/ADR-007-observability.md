@@ -131,6 +131,7 @@ import logging
 import sys
 import structlog
 
+
 def configure_logging(json_format: bool = False, log_level: str = "INFO"):
     """Configure structured logging pipeline."""
     shared_processors = [
@@ -163,6 +164,7 @@ def configure_logging(json_format: bool = False, log_level: str = "INFO"):
         level=getattr(logging, log_level.upper(), logging.INFO),
     )
 
+
 def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:
     """Get a bound structured logger instance."""
     return structlog.get_logger(name)
@@ -175,17 +177,20 @@ import structlog
 
 logger = structlog.get_logger("agent.recon")
 
-async def execute_recon_task(engagement_id: str, task_id: str, agent_id: str, target: str):
+
+async def execute_recon_task(
+    engagement_id: str, task_id: str, agent_id: str, target: str
+):
     # Bind context to current async contextvars
     structlog.contextvars.bind_contextvars(
         engagement_id=engagement_id,
         correlation_id=f"corr-{engagement_id}-{task_id}",
         task_id=task_id,
-        agent_id=agent_id
+        agent_id=agent_id,
     )
 
     logger.info("Starting target port probe", target=target, port_range="8000-8100")
-    # Emits: {"event": "Starting target port probe", "target": "127.0.0.1", "port_range": "8000-8100", 
+    # Emits: {"event": "Starting target port probe", "target": "127.0.0.1", "port_range": "8000-8100",
     #         "engagement_id": "eng-01", "correlation_id": "corr-eng-01-t1", "level": "info", "timestamp": "..."}
 ```
 
