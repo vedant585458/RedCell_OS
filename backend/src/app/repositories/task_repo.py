@@ -106,6 +106,34 @@ class TaskRepository(BaseRepository[TaskModel, str]):
 
         return results
 
+    async def list_by_parent(self, parent_task_id: str) -> list[TaskResponse]:
+        """List all direct child subtasks belonging to a parent task."""
+        stmt = (
+            select(TaskModel)
+            .where(TaskModel.parent_task_id == parent_task_id)
+            .order_by(TaskModel.priority.desc(), TaskModel.created_at.asc())
+        )
+        res = await self.session.execute(stmt)
+        tasks = res.scalars().all()
+
+        results: list[TaskResponse] = []
+        for t in tasks:
+            dep_stmt = select(TaskDependencyModel.depends_on_task_id).where(
+                TaskDependencyModel.task_id == t.id
+            )
+            dep_res = await self.session.execute(dep_stmt)
+            depends_on = [row[0] for row in dep_res.fetchall()]
+
+            block_stmt = select(TaskDependencyModel.task_id).where(
+                TaskDependencyModel.depends_on_task_id == t.id
+            )
+            block_res = await self.session.execute(block_stmt)
+            blocks = [row[0] for row in block_res.fetchall()]
+
+            results.append(t.to_response(depends_on=depends_on, blocks=blocks))
+
+        return results
+
     async def list_by_department(
         self,
         department_id: str,
