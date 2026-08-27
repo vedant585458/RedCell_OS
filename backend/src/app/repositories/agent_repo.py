@@ -69,14 +69,20 @@ class AgentRepository(BaseRepository[AIEmployeeModel, str]):
         return [row.to_response() for row in res.scalars().all()]
 
     async def update_status(
-        self, agent_id: str, status: AgentStatus | str, current_task_id: str | None = None
+        self,
+        agent_id: str,
+        status: AgentStatus | str,
+        current_task_id: str | None = None,
+        clear_task_id: bool = False,
     ) -> AgentResponse | None:
         status_val = status.value if isinstance(status, AgentStatus) else status
         model = await self.get_by_id(agent_id)
         if not model:
             return None
         model.status = status_val
-        if current_task_id is not None:
+        if clear_task_id:
+            model.current_task_id = None
+        elif current_task_id is not None:
             model.current_task_id = current_task_id
         model.updated_at = datetime.now(UTC).isoformat()
         await self.session.flush()

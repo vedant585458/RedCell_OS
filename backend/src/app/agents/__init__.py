@@ -1,5 +1,9 @@
 """Agents package managing AI Employee execution, state machines, and lifecycles."""
 
+from .events import (
+    AgentLifecycleService,
+    AgentStateChangedEventPayload,
+)
 from .state_machine import (
     ALLOWED_TRANSITIONS,
     AgentLifecycleState,
@@ -14,4 +18,6 @@ __all__ = [
     "ALLOWED_TRANSITIONS",
     "StateTransitionRecord",
     "AgentStateMachine",
+    "AgentStateChangedEventPayload",
+    "AgentLifecycleService",
 ]

@@ -16,12 +16,30 @@ class AgentStatus(StrEnum):
 
     IDLE = "IDLE"
     PLANNING = "PLANNING"
-    AWAITING_APPROVAL = "AWAITING_APPROVAL"
+    ASSIGNED = "ASSIGNED"
+    PREPARING = "PREPARING"
+    RUNNING = "RUNNING"
     EXECUTING = "EXECUTING"
+    WAITING_BLOCKED = "WAITING_BLOCKED"
+    AWAITING_APPROVAL = "AWAITING_APPROVAL"
+    COMMUNICATION = "COMMUNICATION"
+    REVIEW = "REVIEW"
     REPORTING = "REPORTING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
+    RECOVERY = "RECOVERY"
+    TERMINATION = "TERMINATION"
     EMERGENCY_HALTED = "EMERGENCY_HALTED"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Any:
+        """Allow case-insensitive lookups (e.g. 'idle' -> IDLE)."""
+        if isinstance(value, str):
+            val_upper = value.upper()
+            for member in cls:
+                if member.value == val_upper:
+                    return member
+        return None
 
 
 class AgentCreateRequest(BaseModel):
@@ -103,12 +121,13 @@ class AIEmployeeModel(Base):
 
     def to_response(self) -> AgentResponse:
         """Convert ORM model to validated Pydantic AgentResponse."""
+        status_enum = AgentStatus(str(self.status)) or AgentStatus.IDLE
         return AgentResponse(
             id=str(self.id),
             role_id=str(self.role_id),
             department_id=str(self.department_id),
             display_name=str(self.display_name),
-            status=AgentStatus(str(self.status)),
+            status=status_enum,
             current_task_id=str(self.current_task_id) if self.current_task_id else None,
             memory_ref=str(self.memory_ref) if self.memory_ref else None,
             workspace_path=str(self.workspace_path) if self.workspace_path else None,

@@ -338,7 +338,7 @@ export interface components {
          * @description Finite-State Machine (FSM) status enum for AI Employees.
          * @enum {string}
          */
-        AgentStatus: "IDLE" | "PLANNING" | "AWAITING_APPROVAL" | "EXECUTING" | "REPORTING" | "COMPLETED" | "FAILED" | "EMERGENCY_HALTED";
+        AgentStatus: "IDLE" | "PLANNING" | "ASSIGNED" | "PREPARING" | "RUNNING" | "EXECUTING" | "WAITING_BLOCKED" | "AWAITING_APPROVAL" | "COMMUNICATION" | "REVIEW" | "REPORTING" | "COMPLETED" | "FAILED" | "RECOVERY" | "TERMINATION" | "EMERGENCY_HALTED";
         /**
          * AllDepartmentsSummaryResponse
          * @description High-level summary of task distribution across all departments.

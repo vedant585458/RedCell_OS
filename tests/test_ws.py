@@ -13,11 +13,13 @@ from fastapi.testclient import TestClient
 
 def test_websocket_connection_and_handshake():
     app = create_app()
-    with TestClient(app) as client, client.websocket_connect("/ws/events") as websocket:
+    client = TestClient(app)
+    with client.websocket_connect("/ws/events") as websocket:
         data = websocket.receive_json()
         assert data["event_type"] == "connection_established"
         assert data["seq"] >= 0
         assert data["payload"]["status"] == "CONNECTED"
+        websocket.close()
 
 
 @pytest.mark.asyncio

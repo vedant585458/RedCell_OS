@@ -7,7 +7,11 @@ from typing import Any
 import structlog
 
 from app.core.logging import get_logger
-from app.orchestrator.models import OrchestratorCommand, OrchestratorEvent, OrchestratorState
+from app.orchestrator.models import (
+    OrchestratorCommand,
+    OrchestratorEvent,
+    OrchestratorState,
+)
 
 logger = get_logger("orchestrator.core")
 
@@ -78,7 +82,7 @@ class Orchestrator:
         all_workers = [
             t
             for t in [self._command_worker_task, self._event_worker_task, *active_tasks]
-            if t is not None
+            if t is not None and not t.done()
         ]
 
         if all_workers:
@@ -87,10 +91,8 @@ class Orchestrator:
                     asyncio.gather(*all_workers, return_exceptions=True),
                     timeout=timeout_sec,
                 )
-            except TimeoutError:
-                logger.warning(
-                    f"Orchestrator shutdown timed out after {timeout_sec}s; remaining tasks forced cancelled"
-                )
+            except (TimeoutError, asyncio.CancelledError, RuntimeError):
+                pass
 
         self._tracked_tasks.clear()
         self._command_worker_task = None
