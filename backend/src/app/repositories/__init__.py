@@ -14,6 +14,7 @@ from .message_repo import MessageRepository
 from .role_repo import RoleRepository
 from .task_repo import TaskRepository
 from .unit_of_work import UnitOfWork, get_uow
+from .workspace_repo import WorkspaceRepository
 
 __all__ = [
     "BaseRepository",
@@ -31,4 +32,5 @@ __all__ = [
     "ExecutionRepository",
     "AgentMemoryRepository",
     "ExecutionContextRepository",
+    "WorkspaceRepository",
 ]

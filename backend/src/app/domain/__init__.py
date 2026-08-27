@@ -103,6 +103,12 @@ from .task import (
     TaskStatus,
     TaskUpdateRequest,
 )
+from .workspace import (
+    WorkspaceModel,
+    WorkspaceProvisionRequest,
+    WorkspaceResponse,
+    WorkspaceStatus,
+)
 
 __all__ = [
     "Base",
@@ -141,6 +147,10 @@ __all__ = [
     "TaskModel",
     "TaskDependencyModel",
     "TaskRepository",
+    "WorkspaceStatus",
+    "WorkspaceProvisionRequest",
+    "WorkspaceResponse",
+    "WorkspaceModel",
     "FindingStatus",
     "FindingSeverity",
     "EvidenceType",

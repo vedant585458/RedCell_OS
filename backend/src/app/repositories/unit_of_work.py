@@ -19,6 +19,7 @@ from app.repositories.finding_repo import FindingRepository
 from app.repositories.message_repo import MessageRepository
 from app.repositories.role_repo import RoleRepository
 from app.repositories.task_repo import TaskRepository
+from app.repositories.workspace_repo import WorkspaceRepository
 
 
 class UnitOfWork:
@@ -40,6 +41,7 @@ class UnitOfWork:
         self.executions: ExecutionRepository
         self.memories: AgentMemoryRepository
         self.execution_contexts: ExecutionContextRepository
+        self.workspaces: WorkspaceRepository
 
     async def __aenter__(self) -> "UnitOfWork":
         self.session = self.session_factory()
@@ -55,6 +57,7 @@ class UnitOfWork:
         self.executions = ExecutionRepository(self.session)
         self.memories = AgentMemoryRepository(self.session)
         self.execution_contexts = ExecutionContextRepository(self.session)
+        self.workspaces = WorkspaceRepository(self.session)
         return self
 
     async def __aexit__(
