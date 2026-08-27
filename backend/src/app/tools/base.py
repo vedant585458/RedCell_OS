@@ -1,10 +1,16 @@
 """Tool definition interfaces, parameter schemas, and security risk levels."""
 
 import re
+from abc import ABC, abstractmethod
 from enum import StrEnum
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field
+
+from app.process.worker import ProcessResult
+
+ArgsT = TypeVar("ArgsT", bound=BaseModel)
+ResultT = TypeVar("ResultT", bound=BaseModel)
 
 
 class ToolRiskLevel(StrEnum):
@@ -87,7 +93,11 @@ class ToolDefinition(BaseModel):
         elif self.tool_id == "httpx":
             target_url = validated_args.get("target_url", "http://127.0.0.1:8088")
             path = validated_args.get("path", "/")
-            full_url = f"{target_url.rstrip('/')}/{path.lstrip('/')}"
+            full_url = (
+                f"{target_url.rstrip('/')}/{path.lstrip('/')}"
+                if path and path != "/"
+                else target_url
+            )
             argv.extend(["-u", full_url, "-status-code", "-title", "-silent"])
 
         elif self.tool_id == "subfinder":
@@ -99,10 +109,15 @@ class ToolDefinition(BaseModel):
             template = validated_args.get("template", "cves")
             argv.extend(["-u", str(target_url), "-t", str(template), "-silent", "-json"])
 
-        elif self.tool_id == "curl_probe":
-            url = validated_args.get("url", "http://127.0.0.1:8088")
+        elif self.tool_id in ("curl_probe", "http_probe"):
+            url = validated_args.get(
+                "target_url", validated_args.get("url", "http://127.0.0.1:8088")
+            )
+            path = validated_args.get("path", "")
+            if path and path != "/":
+                url = f"{url.rstrip('/')}/{path.lstrip('/')}"
             method = validated_args.get("method", "GET")
-            argv.extend(["curl", "-s", "-X", str(method), str(url)])
+            argv.extend(["-i", "-s", "-S", "-L", "-X", str(method), str(url)])
 
         elif self.tool_id == "python_poc_runner":
             script_path = validated_args.get("script_path", "poc.py")
@@ -120,3 +135,27 @@ class ToolDefinition(BaseModel):
                     argv.extend([f"--{k}", str(v)])
 
         return argv
+
+
+class ToolInterface(ABC, Generic[ArgsT, ResultT]):
+    """Standardized tool interface implementing arg validation, argv construction, and output parsing (Technical Decision)."""
+
+    tool_id: str
+    name: str
+    required_capability: str
+    risk_level: ToolRiskLevel
+
+    @abstractmethod
+    def validate_args(self, raw_args: dict[str, Any]) -> ArgsT:
+        """Validate raw arguments into typed Pydantic model."""
+        pass
+
+    @abstractmethod
+    def build_argv(self, args: ArgsT) -> list[str]:
+        """Construct secure CLI argv tokens."""
+        pass
+
+    @abstractmethod
+    def parse_output(self, process_result: ProcessResult) -> ResultT:
+        """Parse raw process execution output into structured result."""
+        pass

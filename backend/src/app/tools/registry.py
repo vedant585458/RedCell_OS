@@ -205,6 +205,21 @@ class ToolRegistry:
                     ToolParameter(name="output_file", param_type="string", default="report.pdf"),
                 ],
             ),
+            # 8. HTTP Probe Tool
+            ToolDefinition(
+                tool_id="http_probe",
+                name="HTTP Web Route & Technology Prober",
+                binary_name="curl",
+                description="Active HTTP route probing, status extraction, and technology detection",
+                risk_level=ToolRiskLevel.INTRUSIVE,
+                required_capability="web_crawling",
+                default_timeout_sec=30.0,
+                parameters=[
+                    ToolParameter(name="target_url", param_type="string", required=True),
+                    ToolParameter(name="method", param_type="string", default="GET"),
+                    ToolParameter(name="path", param_type="string", default="/"),
+                ],
+            ),
         ]
 
         for tool in canonical_tools:

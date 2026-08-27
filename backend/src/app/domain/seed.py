@@ -116,7 +116,7 @@ SEED_ROLES: list[RoleCreateRequest] = [
         description="Maps web routes, crawls sitemaps, extracts JavaScript endpoints, and profiles CMS frameworks.",
         system_prompt_template="prompts/roles/web_discovery.jinja2",
         capabilities=["web_crawling", "endpoint_extraction", "tech_stack_fingerprinting"],
-        allowed_tools=["httpx", "katana", "ffuf", "gau", "wappalyzer"],
+        allowed_tools=["httpx", "katana", "ffuf", "gau", "wappalyzer", "http_probe", "curl_probe"],
         approval_gates=[],
     ),
     # 3. Vulnerability Department
