@@ -6,6 +6,11 @@ from .intake_interpreter import (
     InterpretedObjective,
 )
 from .materializer import MaterializationResult, PlanMaterializer
+from .monitor import (
+    CisoDecision,
+    CisoDecisionType,
+    CisoProgressMonitor,
+)
 from .planner import (
     CisoStrategicPlan,
     CisoStrategicPlanner,
@@ -26,6 +31,9 @@ __all__ = [
     "PlannedTask",
     "PlanMaterializer",
     "MaterializationResult",
+    "CisoProgressMonitor",
+    "CisoDecision",
+    "CisoDecisionType",
     "CISO_SYSTEM_PROMPT",
     "CISO_INTERPRETATION_USER_PROMPT",
     "CISO_PLANNING_PROMPT",
