@@ -1,0 +1,16 @@
+{
+  "name": "redcell-os-root",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-Agentic Penetration Testing Organization Simulator",
+  "scripts": {
+    "start": "node scripts/launch.js",
+    "dev": "node scripts/launch.js",
+    "dev:backend": "node scripts/launch.js --backend-only",
+    "dev:frontend": "node scripts/launch.js --frontend-only",
+    "test": "pytest -v tests/",
+    "ci": "./scripts/ci.sh"
+  },
+  "keywords": ["red-team", "ai-agents", "simulator", "security", "purple-team"],
+  "author": "RedCell_OS Architecture Team"
+}
