@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import (
+    departments_router,
     engagements_router,
     events_router,
     health_router,
@@ -81,6 +82,7 @@ def create_app() -> FastAPI:
     app.include_router(events_router)
     app.include_router(organization_router)
     app.include_router(engagements_router)
+    app.include_router(departments_router)
 
     return app
 

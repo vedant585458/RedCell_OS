@@ -257,6 +257,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/departments/{department_id}/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Department Task Queue
+         * @description Retrieve the scoped task queue and SQL-aggregated status counts for a specific department.
+         *
+         *     Used by the 2D office simulation to render department desk workloads, kanban boards,
+         *     and agent activity queues with zero N+1 query overhead.
+         */
+        get: operations["get_department_task_queue_api_v1_departments__department_id__tasks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/departments/tasks/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get All Departments Task Summary
+         * @description Retrieve aggregated task counts across all departments for high-level operations monitoring.
+         */
+        get: operations["get_all_departments_task_summary_api_v1_departments_tasks_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -297,6 +340,18 @@ export interface components {
          */
         AgentStatus: "IDLE" | "PLANNING" | "AWAITING_APPROVAL" | "EXECUTING" | "REPORTING" | "COMPLETED" | "FAILED" | "EMERGENCY_HALTED";
         /**
+         * AllDepartmentsSummaryResponse
+         * @description High-level summary of task distribution across all departments.
+         */
+        AllDepartmentsSummaryResponse: {
+            /** Engagement Id */
+            engagement_id: string | null;
+            /** Total Active Tasks */
+            total_active_tasks: number;
+            /** Departments */
+            departments: components["schemas"]["DepartmentTaskSummaryItem"][];
+        };
+        /**
          * DepartmentResponse
          * @description Outbound API response representing a department.
          */
@@ -313,6 +368,80 @@ export interface components {
             color_theme: string;
             /** Created At */
             created_at: string;
+        };
+        /**
+         * DepartmentTaskQueueResponse
+         * @description Department-scoped task queue response for dashboard and office visualization.
+         */
+        DepartmentTaskQueueResponse: {
+            /** Department Id */
+            department_id: string;
+            /** Department Name */
+            department_name: string;
+            /** Engagement Id */
+            engagement_id: string | null;
+            counts: components["schemas"]["DepartmentTaskStatusCounts"];
+            /** Tasks */
+            tasks?: components["schemas"]["TaskResponse"][];
+        };
+        /**
+         * DepartmentTaskStatusCounts
+         * @description Aggregated count of tasks by lifecycle status computed at database level.
+         */
+        DepartmentTaskStatusCounts: {
+            /**
+             * Pending
+             * @default 0
+             */
+            pending: number;
+            /**
+             * Ready
+             * @default 0
+             */
+            ready: number;
+            /**
+             * In Progress
+             * @default 0
+             */
+            in_progress: number;
+            /**
+             * Awaiting Approval
+             * @default 0
+             */
+            awaiting_approval: number;
+            /**
+             * Completed
+             * @default 0
+             */
+            completed: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed: number;
+            /**
+             * Blocked
+             * @default 0
+             */
+            blocked: number;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+        };
+        /**
+         * DepartmentTaskSummaryItem
+         * @description Summary item for a single department's queue health.
+         */
+        DepartmentTaskSummaryItem: {
+            /** Department Id */
+            department_id: string;
+            /** Department Name */
+            department_name: string;
+            /** Color Theme */
+            color_theme: string;
+            counts: components["schemas"]["DepartmentTaskStatusCounts"];
         };
         /**
          * DepartmentWithEmployeesResponse
@@ -764,6 +893,55 @@ export interface components {
             excluded_sensitive_endpoints?: string[];
         };
         /**
+         * TaskResponse
+         * @description Outbound API response representing a Task entity and its dependency graph edges.
+         */
+        TaskResponse: {
+            /** Task Id */
+            task_id: string;
+            /** Engagement Id */
+            engagement_id: string;
+            /** Department Id */
+            department_id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            status: components["schemas"]["TaskStatus"];
+            /** Priority */
+            priority: number;
+            /** Assigned Role */
+            assigned_role: string;
+            /** Assigned Agent Id */
+            assigned_agent_id: string | null;
+            /** Parent Task Id */
+            parent_task_id: string | null;
+            /** Depends On */
+            depends_on: string[];
+            /** Blocks */
+            blocks: string[];
+            /** Requires Approval Gate */
+            requires_approval_gate: string | null;
+            /** Input Context */
+            input_context: {
+                [key: string]: unknown;
+            };
+            /** Output Artifacts */
+            output_artifacts: {
+                [key: string]: unknown;
+            }[];
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /**
+         * TaskStatus
+         * @description Lifecycle status enum for individual tasks within an engagement DAG.
+         * @enum {string}
+         */
+        TaskStatus: "PENDING" | "READY" | "RUNNING" | "AWAITING_APPROVAL" | "COMPLETED" | "FAILED" | "BLOCKED" | "CANCELLED";
+        /**
          * TimeWindowSchema
          * @description Temporal validity boundaries for the engagement.
          */
@@ -1157,6 +1335,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EngagementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_department_task_queue_api_v1_departments__department_id__tasks_get: {
+        parameters: {
+            query?: {
+                /** @description Optional engagement filter */
+                engagement_id?: string | null;
+                /** @description Optional status filter */
+                status?: components["schemas"]["TaskStatus"] | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                department_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentTaskQueueResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_all_departments_task_summary_api_v1_departments_tasks_summary_get: {
+        parameters: {
+            query?: {
+                /** @description Optional engagement filter */
+                engagement_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllDepartmentsSummaryResponse"];
                 };
             };
             /** @description Validation Error */

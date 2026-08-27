@@ -1,5 +1,6 @@
 """API router package for RedCell_OS."""
 
+from .departments import router as departments_router
 from .engagements import router as engagements_router
 from .events import router as events_router
 from .health import router as health_router
@@ -15,6 +16,7 @@ __all__ = [
     "events_router",
     "organization_router",
     "engagements_router",
+    "departments_router",
     "ws_manager",
     "ConnectionManager",
 ]

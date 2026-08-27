@@ -3,7 +3,7 @@
 import json
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.task import (
@@ -106,12 +106,92 @@ class TaskRepository(BaseRepository[TaskModel, str]):
 
         return results
 
+    async def list_by_department(
+        self,
+        department_id: str,
+        engagement_id: str | None = None,
+        status: TaskStatus | str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[TaskResponse]:
+        """List tasks scoped to a department with optional engagement and status filters."""
+        stmt = select(TaskModel).where(TaskModel.department_id == department_id)
+        if engagement_id:
+            stmt = stmt.where(TaskModel.engagement_id == engagement_id)
+        if status:
+            status_val = status.value if isinstance(status, TaskStatus) else status
+            stmt = stmt.where(TaskModel.status == status_val)
+
+        stmt = (
+            stmt.order_by(TaskModel.priority.desc(), TaskModel.created_at.asc())
+            .limit(limit)
+            .offset(offset)
+        )
+        res = await self.session.execute(stmt)
+        tasks = res.scalars().all()
+
+        results: list[TaskResponse] = []
+        for t in tasks:
+            dep_stmt = select(TaskDependencyModel.depends_on_task_id).where(
+                TaskDependencyModel.task_id == t.id
+            )
+            dep_res = await self.session.execute(dep_stmt)
+            depends_on = [row[0] for row in dep_res.fetchall()]
+
+            block_stmt = select(TaskDependencyModel.task_id).where(
+                TaskDependencyModel.depends_on_task_id == t.id
+            )
+            block_res = await self.session.execute(block_stmt)
+            blocks = [row[0] for row in block_res.fetchall()]
+
+            results.append(t.to_response(depends_on=depends_on, blocks=blocks))
+
+        return results
+
+    async def get_department_task_counts(
+        self,
+        department_id: str,
+        engagement_id: str | None = None,
+    ) -> dict[str, int]:
+        """Compute task status aggregation counts via SQL GROUP BY for scale and performance."""
+        stmt = select(TaskModel.status, func.count(TaskModel.id)).where(
+            TaskModel.department_id == department_id
+        )
+        if engagement_id:
+            stmt = stmt.where(TaskModel.engagement_id == engagement_id)
+        stmt = stmt.group_by(TaskModel.status)
+
+        res = await self.session.execute(stmt)
+        raw_counts: dict[str, int] = {str(row[0]): int(row[1]) for row in res.fetchall()}
+
+        counts = {
+            "pending": raw_counts.get(TaskStatus.PENDING.value, 0),
+            "ready": raw_counts.get(TaskStatus.READY.value, 0),
+            "in_progress": raw_counts.get(TaskStatus.RUNNING.value, 0),
+            "awaiting_approval": raw_counts.get(TaskStatus.AWAITING_APPROVAL.value, 0),
+            "completed": raw_counts.get(TaskStatus.COMPLETED.value, 0),
+            "failed": raw_counts.get(TaskStatus.FAILED.value, 0),
+            "blocked": raw_counts.get(TaskStatus.BLOCKED.value, 0),
+            "total": sum(raw_counts.values()),
+        }
+        return counts
+
     async def update_status(self, task_id: str, status: TaskStatus | str) -> TaskResponse | None:
         status_val = status.value if isinstance(status, TaskStatus) else status
         model = await self.get_by_id(task_id)
         if not model:
             return None
         model.status = status_val
+        model.updated_at = datetime.now(UTC).isoformat()
+        await self.session.flush()
+        return await self.get_task_response(task_id)
+
+    async def assign_agent(self, task_id: str, agent_id: str) -> TaskResponse | None:
+        model = await self.get_by_id(task_id)
+        if not model:
+            return None
+        model.assigned_agent_id = agent_id
+        model.status = TaskStatus.RUNNING.value
         model.updated_at = datetime.now(UTC).isoformat()
         await self.session.flush()
         return await self.get_task_response(task_id)
