@@ -27,7 +27,7 @@ async function runTests() {
   console.log("\n>>> Test 1: Normal Startup & Health Verification...");
   const supervisor = new BackendSupervisor({
     maxRestartsInWindow: 3,
-    windowMs: 5000,
+    windowMs: 15000,
     initialBackoffMs: 200,
     maxBackoffMs: 1000,
   });

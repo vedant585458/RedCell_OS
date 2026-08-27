@@ -132,7 +132,14 @@ class TerminalSession:
         self.engagement_id = engagement_id
         self.workspace_path = workspace_path
         self.cwd = workspace_path
-        self.env = env or os.environ.copy()
+
+        default_env = os.environ.copy()
+        user_local_bin = os.path.expanduser("~/.local/bin")
+        if user_local_bin not in default_env.get("PATH", ""):
+            default_env["PATH"] = (
+                f"{user_local_bin}:{default_env.get('PATH', '/usr/local/bin:/usr/bin:/bin')}"
+            )
+        self.env = env or default_env
 
         self.ring_buffer = TerminalRingBuffer(max_lines=max_buffer_lines)
         self.history: list[TerminalCommandRecord] = []
