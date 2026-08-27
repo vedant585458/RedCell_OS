@@ -22,6 +22,7 @@ from app.api import (
 from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
 from app.orchestrator import global_orchestrator
+from app.scheduling.scheduler import global_priority_scheduler
 from app.services.org_bootstrap import OrgBootstrapService
 from app.storage.database import dispose_engine, get_session_factory, init_db
 from app.tasks.readiness_listener import TaskReadinessListener
@@ -61,9 +62,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     readiness_listener = TaskReadinessListener(get_session_factory())
     readiness_listener.start_listening()
 
+    # 6. Start priority queue scheduler event listener
+    global_priority_scheduler.start_event_listener()
+
     yield
-    # Gracefully stop readiness listener, cancel active agent tasks, stop orchestrator, and close DB
+    # Gracefully stop listeners, cancel active agent tasks, stop orchestrator, and close DB
     logger.info("RedCell_OS backend control plane shutting down")
+    global_priority_scheduler.stop_event_listener()
     readiness_listener.stop_listening()
     await global_agent_registry.cancel_all()
     await global_orchestrator.stop()
