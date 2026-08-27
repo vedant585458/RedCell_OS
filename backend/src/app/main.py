@@ -24,6 +24,7 @@ from app.core.logging import configure_logging, get_logger
 from app.orchestrator import global_orchestrator
 from app.services.org_bootstrap import OrgBootstrapService
 from app.storage.database import dispose_engine, get_session_factory, init_db
+from app.tasks.readiness_listener import TaskReadinessListener
 
 logger = get_logger("app.main")
 
@@ -56,9 +57,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         total_checked=reconciliation_report.total_checked,
     )
 
+    # 5. Start event-driven task readiness listener
+    readiness_listener = TaskReadinessListener(get_session_factory())
+    readiness_listener.start_listening()
+
     yield
-    # Gracefully cancel active agent tasks, stop orchestrator, and close DB
+    # Gracefully stop readiness listener, cancel active agent tasks, stop orchestrator, and close DB
     logger.info("RedCell_OS backend control plane shutting down")
+    readiness_listener.stop_listening()
     await global_agent_registry.cancel_all()
     await global_orchestrator.stop()
     await dispose_engine()

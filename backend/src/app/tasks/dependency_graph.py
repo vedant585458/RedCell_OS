@@ -69,19 +69,24 @@ class TaskDependencyGraph(BaseModel):
         description="Map of task_id to current lifecycle status",
     )
 
-    def add_node(self, task_id: str, status: TaskStatus = TaskStatus.PENDING) -> None:
+    def add_node(self, task_id: str, status: TaskStatus | str | None = None) -> None:
         """Add a task node to the graph if not already present."""
         self.nodes.add(task_id)
         if task_id not in self.depends_on:
             self.depends_on[task_id] = set()
         if task_id not in self.blocks:
             self.blocks[task_id] = set()
-        self.statuses[task_id] = status
+        if status is not None:
+            resolved_status = status if isinstance(status, TaskStatus) else TaskStatus(str(status))
+            self.statuses[task_id] = resolved_status
+        elif task_id not in self.statuses:
+            self.statuses[task_id] = TaskStatus.PENDING
 
-    def set_status(self, task_id: str, status: TaskStatus) -> None:
+    def set_status(self, task_id: str, status: TaskStatus | str) -> None:
         """Update current status of a task node."""
-        self.add_node(task_id, status)
-        self.statuses[task_id] = status
+        resolved_status = status if isinstance(status, TaskStatus) else TaskStatus(str(status))
+        self.add_node(task_id, resolved_status)
+        self.statuses[task_id] = resolved_status
 
     def would_create_cycle(self, task_id: str, depends_on_task_id: str) -> list[str] | None:
         """Incremental DFS Cycle Detection: Check if adding (task_id depends on depends_on_task_id)

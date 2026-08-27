@@ -1,4 +1,4 @@
-"""Tasks package managing task models, state machines, DAG execution lifecycles, and dependency graphs."""
+"""Tasks package managing task models, state machines, DAG execution lifecycles, and readiness listeners."""
 
 from .decomposition import (
     DEFAULT_MAX_DECOMPOSITION_DEPTH,
@@ -20,6 +20,11 @@ from .dependency_graph import (
     TaskDependencyGraph,
     TaskDependencyGraphEngine,
     TaskNodeNotFoundError,
+)
+from .readiness_listener import (
+    TaskReadinessListener,
+    TaskReadyEventPayload,
+    global_readiness_listener,
 )
 from .state_machine import (
     ALLOWED_TASK_TRANSITIONS,
@@ -52,4 +57,7 @@ __all__ = [
     "CyclicDependencyError",
     "SelfDependencyError",
     "TaskNodeNotFoundError",
+    "TaskReadyEventPayload",
+    "TaskReadinessListener",
+    "global_readiness_listener",
 ]
