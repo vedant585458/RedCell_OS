@@ -100,6 +100,18 @@ class FindingRepository(BaseRepository[FindingModel, str]):
 
         return finding_model.to_response(evidence_list=evidence_list, risk_score=risk_score)
 
+    async def update_status(
+        self, finding_id: str, status: FindingStatus | str
+    ) -> FindingResponse | None:
+        status_val = status.value if isinstance(status, FindingStatus) else status
+        model = await self.get_by_id(finding_id)
+        if not model:
+            return None
+        model.status = status_val
+        model.updated_at = datetime.now(UTC).isoformat()
+        await self.session.flush()
+        return await self.get_finding_response(finding_id)
+
     async def add_evidence(self, finding_id: str, req: EvidenceCreateRequest) -> EvidenceResponse:
         now = datetime.now(UTC).isoformat()
         ev_model = EvidenceModel(
