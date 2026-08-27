@@ -1,4 +1,4 @@
-"""Agents package managing AI Employee execution, state machines, and lifecycles."""
+"""Agents package managing AI Employee execution, state machines, lifecycles, and registries."""
 
 from .events import (
     AgentLifecycleService,
@@ -15,6 +15,13 @@ from .recovery import (
     RecoveryEscalatedError,
     RecoveryPolicy,
     RecoveryPolicyRule,
+)
+from .registry import (
+    NON_TERMINAL_STATES,
+    AgentReconciliationReport,
+    AgentRegistry,
+    AgentRuntimeHandle,
+    global_agent_registry,
 )
 from .state_machine import (
     ALLOWED_TRANSITIONS,
@@ -42,4 +49,9 @@ __all__ = [
     "DEFAULT_POLICY_RULES",
     "RecoveryPolicy",
     "AgentRecoveryService",
+    "AgentRuntimeHandle",
+    "AgentReconciliationReport",
+    "AgentRegistry",
+    "global_agent_registry",
+    "NON_TERMINAL_STATES",
 ]

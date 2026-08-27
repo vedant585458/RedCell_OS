@@ -8,6 +8,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.agents.registry import global_agent_registry
 from app.api import (
     departments_router,
     engagements_router,
@@ -45,9 +46,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # 3. Start the central orchestrator event loop
     await global_orchestrator.start()
+
+    # 4. Reconcile runtime agent registry with database state (handling crash recovery)
+    reconciliation_report = await global_agent_registry.reconcile_with_db(get_session_factory())
+    logger.info(
+        f"Agent reconciliation complete: {reconciliation_report.reconciled_count} active agents reconciled to RECOVERY",
+        reconciled_count=reconciliation_report.reconciled_count,
+        total_checked=reconciliation_report.total_checked,
+    )
+
     yield
-    # Gracefully stop the orchestrator and drain tasks
+    # Gracefully cancel active agent tasks, stop orchestrator, and close DB
     logger.info("RedCell_OS backend control plane shutting down")
+    await global_agent_registry.cancel_all()
     await global_orchestrator.stop()
     await dispose_engine()
 
