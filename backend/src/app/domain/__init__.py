@@ -60,6 +60,12 @@ from .execution import (
     ExecutionRepository,
     ExecutionResponse,
 )
+from .execution_context import (
+    CommandExecutionRecord,
+    ExecutionContextArchive,
+    ExecutionContextModel,
+    ExecutionContextStatus,
+)
 from .finding import (
     EvidenceCreateRequest,
     EvidenceModel,
@@ -158,6 +164,10 @@ __all__ = [
     "ExecutionResponse",
     "ExecutionModel",
     "ExecutionRepository",
+    "ExecutionContextStatus",
+    "CommandExecutionRecord",
+    "ExecutionContextArchive",
+    "ExecutionContextModel",
     "ApprovalStatus",
     "ApprovalRequestSchema",
     "ApprovalDecisionRequest",

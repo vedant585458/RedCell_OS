@@ -1,4 +1,4 @@
-"""Agents package managing AI Employee execution, state machines, lifecycles, working memory, long-term memories, and registries."""
+"""Agents package managing AI Employee execution, state machines, lifecycles, working memory, long-term memories, execution context, and registries."""
 
 from .context_builder import (
     DEFAULT_CONTEXT_TOKEN_BUDGET,
@@ -10,6 +10,10 @@ from .context_builder import (
 from .events import (
     AgentLifecycleService,
     AgentStateChangedEventPayload,
+)
+from .execution_context import (
+    ExecutionContext,
+    ExecutionContextService,
 )
 from .memory_service import (
     AgentMemoryService,
@@ -72,4 +76,6 @@ __all__ = [
     "DEFAULT_CONTEXT_TOKEN_BUDGET",
     "AgentMemoryService",
     "MemoryPoisoningFilter",
+    "ExecutionContext",
+    "ExecutionContextService",
 ]

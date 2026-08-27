@@ -7,6 +7,7 @@ from .audit_repo import AuditRepository
 from .base import BaseRepository
 from .department_repo import DepartmentRepository
 from .engagement_repo import EngagementRepository
+from .execution_context_repo import ExecutionContextRepository
 from .execution_repo import ExecutionRepository
 from .finding_repo import FindingRepository
 from .message_repo import MessageRepository
@@ -29,4 +30,5 @@ __all__ = [
     "MessageRepository",
     "ExecutionRepository",
     "AgentMemoryRepository",
+    "ExecutionContextRepository",
 ]

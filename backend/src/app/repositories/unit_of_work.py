@@ -13,6 +13,7 @@ from app.repositories.approval_repo import ApprovalRepository
 from app.repositories.audit_repo import AuditRepository
 from app.repositories.department_repo import DepartmentRepository
 from app.repositories.engagement_repo import EngagementRepository
+from app.repositories.execution_context_repo import ExecutionContextRepository
 from app.repositories.execution_repo import ExecutionRepository
 from app.repositories.finding_repo import FindingRepository
 from app.repositories.message_repo import MessageRepository
@@ -38,6 +39,7 @@ class UnitOfWork:
         self.messages: MessageRepository
         self.executions: ExecutionRepository
         self.memories: AgentMemoryRepository
+        self.execution_contexts: ExecutionContextRepository
 
     async def __aenter__(self) -> "UnitOfWork":
         self.session = self.session_factory()
@@ -52,6 +54,7 @@ class UnitOfWork:
         self.messages = MessageRepository(self.session)
         self.executions = ExecutionRepository(self.session)
         self.memories = AgentMemoryRepository(self.session)
+        self.execution_contexts = ExecutionContextRepository(self.session)
         return self
 
     async def __aexit__(
