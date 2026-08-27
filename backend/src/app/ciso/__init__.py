@@ -5,6 +5,7 @@ from .intake_interpreter import (
     CisoInterpretationResult,
     InterpretedObjective,
 )
+from .materializer import MaterializationResult, PlanMaterializer
 from .planner import (
     CisoStrategicPlan,
     CisoStrategicPlanner,
@@ -23,6 +24,8 @@ __all__ = [
     "CisoStrategicPlanner",
     "CisoStrategicPlan",
     "PlannedTask",
+    "PlanMaterializer",
+    "MaterializationResult",
     "CISO_SYSTEM_PROMPT",
     "CISO_INTERPRETATION_USER_PROMPT",
     "CISO_PLANNING_PROMPT",
