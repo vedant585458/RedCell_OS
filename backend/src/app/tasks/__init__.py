@@ -1,4 +1,4 @@
-"""Tasks package managing task models, state machines, DAG execution lifecycles, and recursive decomposition."""
+"""Tasks package managing task models, state machines, DAG execution lifecycles, and dependency graphs."""
 
 from .decomposition import (
     DEFAULT_MAX_DECOMPOSITION_DEPTH,
@@ -12,6 +12,14 @@ from .decomposition import (
     SubtaskCountExceededError,
     SubtaskService,
     SubtaskSpec,
+)
+from .dependency_graph import (
+    CyclicDependencyError,
+    DependencyGraphError,
+    SelfDependencyError,
+    TaskDependencyGraph,
+    TaskDependencyGraphEngine,
+    TaskNodeNotFoundError,
 )
 from .state_machine import (
     ALLOWED_TASK_TRANSITIONS,
@@ -38,4 +46,10 @@ __all__ = [
     "ParentTaskTerminalError",
     "DEFAULT_MAX_DECOMPOSITION_DEPTH",
     "DEFAULT_MAX_SUBTASKS_PER_TASK",
+    "TaskDependencyGraph",
+    "TaskDependencyGraphEngine",
+    "DependencyGraphError",
+    "CyclicDependencyError",
+    "SelfDependencyError",
+    "TaskNodeNotFoundError",
 ]
