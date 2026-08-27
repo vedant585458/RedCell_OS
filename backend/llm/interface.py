@@ -1,7 +1,9 @@
 """Abstract AgentBrain interface protocol for provider-agnostic LLM reasoning."""
 
 from abc import ABC, abstractmethod
-from typing import AsyncIterator, Type, TypeVar
+from collections.abc import AsyncIterator
+from typing import TypeVar
+
 from pydantic import BaseModel
 
 from .models import BrainResponse, ChatMessage, StreamChunk
@@ -18,7 +20,7 @@ class AgentBrain(ABC):
         prompt: str,
         system_prompt: str | None = None,
         history: list[ChatMessage] | None = None,
-        response_schema: Type[T] | None = None,
+        response_schema: type[T] | None = None,
         temperature: float = 0.2,
         max_tokens: int = 2048,
         timeout_sec: float = 45.0,

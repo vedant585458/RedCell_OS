@@ -5,14 +5,16 @@ Revises: 0005_findings_evidence_risk
 Create Date: 2026-08-26 13:05:00.000000
 """
 
-from typing import Sequence, Union
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
 
+from alembic import op
+
 revision: str = "0006_core_system_entities"
-down_revision: Union[str, None] = "0005_findings_evidence_risk"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "0005_findings_evidence_risk"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

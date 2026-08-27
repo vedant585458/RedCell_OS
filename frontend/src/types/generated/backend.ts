@@ -300,6 +300,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tasks
+         * @description List and filter tasks for dashboard views and 2D office visualization.
+         *
+         *     Supports filtering across department, lifecycle status, assigned agent, engagement scope,
+         *     and priority with zero N+1 database queries.
+         */
+        get: operations["list_tasks_api_v1_tasks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Task
+         * @description Retrieve a single task by ID along with its prerequisite dependencies and blocked dependents.
+         */
+        get: operations["get_task_api_v1_tasks__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Manual Task Status Override
+         * @description Manual status override endpoint for administrative, operator intervention, and debug workflows.
+         *
+         *     Technical Decision: Gated behind an explicit admin/debug confirmation flag (via 'X-Admin-Override: true'
+         *     header or 'admin_override: true' body attribute) and strictly audited in the immutable audit log.
+         */
+        patch: operations["manual_task_status_override_api_v1_tasks__task_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -893,6 +943,44 @@ export interface components {
             excluded_sensitive_endpoints?: string[];
         };
         /**
+         * TaskManualOverrideRequest
+         * @description Payload for manual administrative/debug task status override.
+         */
+        TaskManualOverrideRequest: {
+            /**
+             * Status
+             * @description Target lifecycle status (e.g. pending, ready, assigned, in_progress, blocked, review, completed, failed, cancelled)
+             */
+            status: string;
+            /**
+             * Assigned Agent Id
+             * @description Optional agent reassignment ID
+             */
+            assigned_agent_id?: string | null;
+            /**
+             * Reason
+             * @description Justification for manual status change
+             * @default Manual administrative override
+             */
+            reason: string;
+            /**
+             * Admin Override
+             * @description Explicit confirmation flag required for manual override
+             * @default false
+             */
+            admin_override: boolean;
+            /**
+             * Actor Id
+             * @description Identifier of operator or admin performing override
+             * @default admin_operator
+             */
+            actor_id: string;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
          * TaskResponse
          * @description Outbound API response representing a Task entity and its dependency graph edges.
          */
@@ -1405,6 +1493,119 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AllDepartmentsSummaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tasks_api_v1_tasks_get: {
+        parameters: {
+            query?: {
+                /** @description Filter tasks by executing department ID */
+                department_id?: string | null;
+                /** @description Filter tasks by status */
+                status?: string | null;
+                /** @description Filter tasks by assigned agent ID */
+                agent_id?: string | null;
+                /** @description Filter tasks by parent engagement ID */
+                engagement_id?: string | null;
+                /** @description Filter tasks by priority level (1=LOW to 4=CRITICAL) */
+                priority?: number | null;
+                /** @description Pagination limit */
+                limit?: number;
+                /** @description Pagination offset */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_task_api_v1_tasks__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    manual_task_status_override_api_v1_tasks__task_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Explicit header required to authorize manual status override ('true' or '1') */
+                "X-Admin-Override"?: string | null;
+            };
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskManualOverrideRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskResponse"];
                 };
             };
             /** @description Validation Error */

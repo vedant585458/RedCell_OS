@@ -115,12 +115,37 @@ class TaskRepository(BaseRepository[TaskModel, str]):
         offset: int = 0,
     ) -> list[TaskResponse]:
         """List tasks scoped to a department with optional engagement and status filters."""
-        stmt = select(TaskModel).where(TaskModel.department_id == department_id)
+        return await self.list_tasks(
+            department_id=department_id,
+            engagement_id=engagement_id,
+            status=status,
+            limit=limit,
+            offset=offset,
+        )
+
+    async def list_tasks(
+        self,
+        department_id: str | None = None,
+        status: TaskStatus | str | None = None,
+        assigned_agent_id: str | None = None,
+        engagement_id: str | None = None,
+        priority: int | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[TaskResponse]:
+        """List tasks with dynamic filtering across department, status, agent, engagement, and priority."""
+        stmt = select(TaskModel)
+        if department_id:
+            stmt = stmt.where(TaskModel.department_id == department_id)
         if engagement_id:
             stmt = stmt.where(TaskModel.engagement_id == engagement_id)
+        if assigned_agent_id:
+            stmt = stmt.where(TaskModel.assigned_agent_id == assigned_agent_id)
+        if priority is not None:
+            stmt = stmt.where(TaskModel.priority == priority)
         if status:
-            status_val = status.value if isinstance(status, TaskStatus) else status
-            stmt = stmt.where(TaskModel.status == status_val)
+            status_val = status.value if isinstance(status, TaskStatus) else str(status)
+            stmt = stmt.where(func.lower(TaskModel.status) == status_val.lower())
 
         stmt = (
             stmt.order_by(TaskModel.priority.desc(), TaskModel.created_at.asc())
@@ -182,6 +207,27 @@ class TaskRepository(BaseRepository[TaskModel, str]):
         if not model:
             return None
         model.status = status_val
+        model.updated_at = datetime.now(UTC).isoformat()
+        await self.session.flush()
+        return await self.get_task_response(task_id)
+
+    async def update_task(
+        self,
+        task_id: str,
+        status: TaskStatus | str | None = None,
+        assigned_agent_id: str | None = None,
+        clear_assigned_agent: bool = False,
+    ) -> TaskResponse | None:
+        model = await self.get_by_id(task_id)
+        if not model:
+            return None
+        if status is not None:
+            status_val = status.value if isinstance(status, TaskStatus) else str(status)
+            model.status = status_val
+        if clear_assigned_agent:
+            model.assigned_agent_id = None
+        elif assigned_agent_id is not None:
+            model.assigned_agent_id = assigned_agent_id
         model.updated_at = datetime.now(UTC).isoformat()
         await self.session.flush()
         return await self.get_task_response(task_id)

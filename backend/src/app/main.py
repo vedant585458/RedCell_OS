@@ -16,6 +16,7 @@ from app.api import (
     health_router,
     organization_router,
     processes_router,
+    tasks_router,
     ws_router,
 )
 from app.core.config import settings
@@ -94,6 +95,7 @@ def create_app() -> FastAPI:
     app.include_router(organization_router)
     app.include_router(engagements_router)
     app.include_router(departments_router)
+    app.include_router(tasks_router)
 
     return app
 

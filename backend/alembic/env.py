@@ -1,18 +1,18 @@
 import asyncio
-from logging.config import fileConfig
 import os
 import site
 import sys
+from logging.config import fileConfig
 
 # Ensure user site-packages and backend/src are available on sys.path
 site.addsitedir(site.getusersitepackages())
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from alembic import context
 from app.core.config import settings
 from app.domain.engagement import Base
 

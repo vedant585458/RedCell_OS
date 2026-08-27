@@ -1,7 +1,9 @@
 """Deterministic MockAgentBrain implementation for offline testing and CI suites."""
 
 import asyncio
-from typing import Any, AsyncIterator, Type, TypeVar
+from collections.abc import AsyncIterator
+from typing import Any, TypeVar
+
 from pydantic import BaseModel
 
 from .interface import AgentBrain
@@ -23,7 +25,7 @@ class MockAgentBrain(AgentBrain):
         prompt: str,
         system_prompt: str | None = None,
         history: list[ChatMessage] | None = None,
-        response_schema: Type[T] | None = None,
+        response_schema: type[T] | None = None,
         temperature: float = 0.2,
         max_tokens: int = 2048,
         timeout_sec: float = 45.0,

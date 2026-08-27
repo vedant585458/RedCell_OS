@@ -48,6 +48,8 @@ export type EngagementIntakeRequest = components["schemas"]["EngagementIntakeReq
 export type TargetScopeSchema = components["schemas"]["TargetScopeSchema"];
 export type RulesOfEngagementSchema = components["schemas"]["RulesOfEngagementSchema"];
 export type TimeWindowSchema = components["schemas"]["TimeWindowSchema"];
+export type TaskResponse = components["schemas"]["TaskResponse"];
+export type TaskManualOverrideRequest = components["schemas"]["TaskManualOverrideRequest"];
 export type ValidationError = components["schemas"]["ValidationError"];
 export type HTTPValidationError = components["schemas"]["HTTPValidationError"];
 EOF
