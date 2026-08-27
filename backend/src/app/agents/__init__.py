@@ -1,5 +1,12 @@
-"""Agents package managing AI Employee execution, state machines, lifecycles, and registries."""
+"""Agents package managing AI Employee execution, state machines, lifecycles, working memory, and registries."""
 
+from .context_builder import (
+    DEFAULT_CONTEXT_TOKEN_BUDGET,
+    AgentWorkingContext,
+    ContextBuilder,
+    RankedContextItem,
+    estimate_tokens,
+)
 from .events import (
     AgentLifecycleService,
     AgentStateChangedEventPayload,
@@ -54,4 +61,9 @@ __all__ = [
     "AgentRegistry",
     "global_agent_registry",
     "NON_TERMINAL_STATES",
+    "ContextBuilder",
+    "AgentWorkingContext",
+    "RankedContextItem",
+    "estimate_tokens",
+    "DEFAULT_CONTEXT_TOKEN_BUDGET",
 ]
